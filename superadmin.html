@@ -322,7 +322,7 @@ select.form-input{cursor:pointer;appearance:none;background-image:url("data:imag
     <div class="toggle-row">
       <div class="toggle-info">
         <div class="toggle-name">Success Mode</div>
-        <div class="toggle-desc">ON = payment-success • OFF = payment-failed</div>
+        <div class="toggle-desc">ON = payment-success • OFF = pending</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="toggle-track" id="pmToggle" onclick="togglePayment()"><div class="toggle-thumb"></div></div>
@@ -331,7 +331,7 @@ select.form-input{cursor:pointer;appearance:none;background-image:url("data:imag
     </div>
     <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-top:8px;">
       <i class="fa-solid fa-arrow-right" style="color:var(--text3);font-size:11px;"></i>
-      <span style="font-size:12px;color:var(--text2);">Redirect: <span id="pmRedirect" style="color:var(--danger);font-weight:700;">payment-failed.html</span></span>
+      <span style="font-size:12px;color:var(--text2);">Redirect: <span id="pmRedirect" style="color:var(--danger);font-weight:700;">pending.html</span></span>
     </div>
   </div>
 
@@ -974,7 +974,7 @@ function togglePayment(){
     p.textContent='Success';p.style.color='var(--accent)';
   }else{
     t.classList.remove('on');s.textContent='OFF';s.style.background='rgba(255,71,87,0.1)';s.style.color='var(--danger)';
-    r.textContent='payment-failed.html';r.style.color='var(--danger)';
+    r.textContent='pending.html';r.style.color='var(--danger)';
     p.textContent='Failed';p.style.color='var(--danger)';
   }
   showToast(pmSuccess?'Payment success ON':'Payment failed ON');
@@ -1207,7 +1207,7 @@ function updatePmToggleUI(){
     p.textContent='Success';p.style.color='var(--accent)';
   }else{
     t.classList.remove('on');s.textContent='OFF';s.style.background='rgba(255,71,87,0.1)';s.style.color='var(--danger)';
-    r.textContent='payment-failed.html';r.style.color='var(--danger)';
+    r.textContent='pending.html';r.style.color='var(--danger)';
     p.textContent='Failed';p.style.color='var(--danger)';
   }
 }
