@@ -303,7 +303,7 @@ function finishTutorial() {
   showToast("Tour complete! Start earning!");
 }
 
-function executeBounce() {
+async function executeBounce() {
   const stored = localStorage.getItem("pendingBounce");
   if (!stored) return;
 
@@ -313,11 +313,42 @@ function executeBounce() {
   try {
     const data = JSON.parse(stored);
     const amount = parseFloat(data.amount) || 0;
-    if (amount <= 0) { isBouncing = false; return; }
+    if (amount <= 0) {
+      isBouncing = false;
+      return;
+    }
 
-    balance = (parseFloat(localStorage.getItem("walletBalance")) || 0) + amount;
+    let newBalance;
+
+    // If Firestore is available, perform a safe server-side update/transaction
+    if (db && userData && userData.phone) {
+      const ref = db.collection("users").doc(String(userData.phone));
+      try {
+        const outcome = await db.runTransaction(async function (tx) {
+          const snap = await tx.get(ref);
+          const d = snap.exists ? snap.data() : {};
+          const currentDbBalance = d.balance !== undefined ? parseFloat(d.balance) || 0 : balance;
+          const updatedBalance = currentDbBalance + amount;
+          
+          tx.set(ref, {
+            balance: updatedBalance,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+
+          return { ok: true, balance: updatedBalance };
+        });
+        newBalance = outcome.balance;
+      } catch (err) {
+        console.error("Bounce Firestore transaction failed:", err);
+        newBalance = balance + amount; // Fallback to local calculation if offline
+      }
+    } else {
+      newBalance = (parseFloat(localStorage.getItem("walletBalance")) || balance) + amount;
+    }
+
+    balance = newBalance;
     userData.balance = balance;
-    saveUserData();
+    saveUserData(); // Syncs to localStorage, Firestore (via general sync), and API if configured
 
     addBounceToActivity("Withdrawal Reversed", amount, "Unsuccessful - Linked bank account not verified");
     sendBounceNotification(amount);
@@ -329,7 +360,7 @@ function executeBounce() {
       Swal.fire({
         icon: "warning",
         title: "Withdrawal Failed",
-        html: '<p style="color:#64748b;">Your withdrawal of <b>₵' + amount.toLocaleString() + '</b> was returned.</p><p style="color:#64748b;margin-top:8px;">Reason: <b>Linked bank account not verified</b></p>',
+        html: '<p style="color:#64748b;">Your withdrawal of <b>₵' + amount.toLocaleString() + '</b> was returned and added back to your balance.</p><p style="color:#64748b;margin-top:8px;">Reason: <b>Linked bank account not verified</b></p>',
         confirmButtonText: "Verify Account",
         confirmButtonColor: "#ef4444"
       }).then(function (r) { if (r.isConfirmed) { verifyBankLink(); } });
