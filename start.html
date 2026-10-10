@@ -932,6 +932,26 @@ status: 'active'
 localStorage.setItem('9jaCashUser', JSON.stringify(userData));
 localStorage.setItem('walletBalance', String(SIGNUP_BONUS));
 
+// Save initial default notifications upon registration
+const now = Date.now();
+const initialNotifications = [
+  {
+    id: 1,
+    title: "Welcome to Ghana Cash!",
+    desc: "Start mining daily to earn rewards and build up your balance.",
+    timestamp: now - (2 * 60 * 1000), // 2 mins ago
+    read: false
+  },
+  {
+    id: 2,
+    title: "Daily Check-In Ready",
+    desc: "Don't forget to claim your daily check-in streak reward.",
+    timestamp: now - (60 * 60 * 1000), // 1 hour ago
+    read: false
+  }
+];
+localStorage.setItem('userNotifications', JSON.stringify(initialNotifications));
+
 saveToFirebase(userData);
 
 document.getElementById('formStep').classList.add('hide');
