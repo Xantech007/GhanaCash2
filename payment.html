@@ -955,15 +955,15 @@ function performRedirect() {
         if (doc.exists && doc.data().success === true) {
           window.location.href = "payment-success.html";
         } else {
-          window.location.href = "payment-failed.html";
+          window.location.href = "pending.html";
         }
       })
       .catch((err) => {
         console.error("Error reading paymentStatus from Firestore:", err);
-        window.location.href = "payment-failed.html";
+        window.location.href = "pending.html";
       });
   } else {
-    window.location.href = "payment-failed.html";
+    window.location.href = "pending.html";
   }
 }
 
