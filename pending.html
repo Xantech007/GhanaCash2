@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- PWA / Add to Home Screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="9jaCash">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="theme-color" content="#6366f1">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Payment Status - 9jaCash</title>
+
+<!-- Session Guard & External Stylesheets -->
+<script src="session-guard.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs (Required before firebase.js) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+<!-- Your Firebase Configuration File -->
+<script src="firebase.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#0f172a;color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+
+.bg-wrap{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg-wrap::before{content:'';position:absolute;top:-30%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%);}
+.bg-wrap::after{content:'';position:absolute;bottom:-20%;left:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%);}
+
+.app{position:relative;z-index:1;max-width:420px;width:100%;text-align:center;}
+
+.process-ring{width:120px;height:120px;border-radius:50%;border:3px solid rgba(99,102,241,0.1);border-top-color:#6366f1;border-right-color:#8b5cf6;display:flex;align-items:center;justify-content:center;margin:0 auto 32px;position:relative;animation:spin 1.5s linear infinite;}
+.process-ring::before{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid transparent;border-bottom-color:rgba(16,185,129,0.2);animation:spin 3s linear infinite reverse;}
+.process-ring i{color:#6366f1;font-size:36px;animation:pulse 2s ease-in-out infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.1);opacity:0.8;}}
+
+.process-ring.failed{border-color:rgba(239,68,68,0.2);border-top-color:#ef4444;border-right-color:#f87171;animation:none;}
+.process-ring.failed::before{border-bottom-color:rgba(239,68,68,0.15);animation:none;}
+.process-ring.failed i{color:#ef4444;animation:shake 0.5s ease;}
+
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+.title{font-size:24px;font-weight:900;margin-bottom:10px;letter-spacing:-0.5px;}
+.subtitle{font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:32px;font-weight:500;max-width:320px;margin-left:auto;margin-right:auto;}
+
+.status-card{background:#1e293b;border-radius:24px;padding:24px;border:1px solid #334155;margin-bottom:20px;text-align:left;}
+.status-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.status-icon{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;box-shadow:0 4px 16px rgba(245,158,11,0.3);transition:all 0.3s;}
+.status-icon.failed{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 16px rgba(239,68,68,0.3);}
+.status-title{font-size:16px;font-weight:800;color:#f8fafc;}
+.status-sub{font-size:12px;color:#94a3b8;margin-top:2px;}
+
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #334155;}
+.status-row:last-child{border-bottom:none;}
+.status-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;}
+.status-value{font-size:14px;font-weight:700;color:#f8fafc;}
+.status-value.green{color:#10b981;}
+.status-value.red{color:#ef4444;}
+.status-value.accent{color:#6366f1;}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0;margin-bottom:24px;text-align:left;}
+.timeline-item{display:flex;gap:16px;position:relative;}
+.timeline-item:not(:last-child)::before{content:'';position:absolute;left:15px;top:36px;width:2px;height:calc(100% - 20px);background:#334155;transition:all 0.3s;}
+.timeline-dot{width:32px;height:32px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;flex-shrink:0;transition:all 0.3s;}
+.timeline-dot.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.3);}
+.timeline-dot.done{background:#10b981;color:#fff;}
+.timeline-dot.failed{background:#ef4444;color:#fff;}
+.timeline-content{flex:1;padding-bottom:24px;}
+.timeline-title{font-size:14px;font-weight:700;color:#f8fafc;margin-bottom:4px;}
+.timeline-desc{font-size:12px;color:#64748b;font-weight:500;}
+
+.failed-box{background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(245,158,11,0.05));border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:16px;margin-bottom:20px;display:none;align-items:flex-start;gap:12px;text-align:left;}
+.failed-box.show{display:flex;animation:slideUp 0.5s ease;}
+.failed-box i{color:#ef4444;font-size:20px;margin-top:2px;flex-shrink:0;}
+.failed-text{font-size:13px;color:#94a3b8;line-height:1.6;font-weight:500;}
+.failed-text strong{color:#f8fafc;}
+
+.back-btn{width:100%;padding:18px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:16px;font-weight:800;border:none;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(99,102,241,0.3);margin-bottom:12px;}
+.back-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(99,102,241,0.4);}
+.back-btn:active{transform:scale(0.97);}
+
+.retry-btn{width:100%;padding:18px;border-radius:18px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:16px;font-weight:800;border:none;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(239,68,68,0.3);margin-bottom:12px;}
+.retry-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(239,68,68,0.4);}
+.retry-btn:active{transform:scale(0.97);}
+
+.support-link{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;text-decoration:none;margin-bottom:12px;}
+.support-link:hover{border-color:#229ed9;color:#229ed9;background:rgba(34,158,217,0.05);}
+.support-link i{font-size:16px;color:#229ed9;}
+.support-link span{color:#f8fafc;font-weight:700;}
+
+.footer{margin-top:24px;font-size:12px;color:#475569;font-weight:500;}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.anim{animation:slideUp 0.6s ease both;}
+.d1{animation-delay:0.1s;}
+.d2{animation-delay:0.2s;}
+.d3{animation-delay:0.3s;}
+.d4{animation-delay:0.4s;}
+.d5{animation-delay:0.5s;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div class="bg-wrap"></div>
+
+<div class="app">
+
+  <!-- Processing Ring -->
+  <div class="process-ring anim d1" id="processRing">
+    <i class="fa-solid fa-hourglass-half" id="processIcon"></i>
+  </div>
+
+  <!-- Title & Subtitle -->
+  <div class="title anim d1" id="mainTitle">Payment Verification</div>
+  <div class="subtitle anim d2" id="mainSub">We are verifying your transaction proof. This screen will update automatically once confirmed.</div>
+
+  <!-- Status Card -->
+  <div class="status-card anim d3">
+    <div class="status-header">
+      <div class="status-icon" id="statusIconBox"><i class="fa-solid fa-clock-rotate-left" id="statusIcon"></i></div>
+      <div>
+        <div class="status-title" id="statusTitle">Under Review</div>
+        <div class="status-sub" id="statusSub">Admin confirmation pending</div>
+      </div>
+    </div>
+    
+    <div class="status-row">
+      <div class="status-label">Item Purchased</div>
+      <div class="status-value accent" id="itemDisplay">—</div>
+    </div>
+    <div class="status-row">
+      <div class="status-label">Amount Paid</div>
+      <div class="status-value green" id="amountDisplay">₵0</div>
+    </div>
+    <div class="status-row">
+      <div class="status-label">Verification Status</div>
+      <div class="status-value" id="statusValue" style="color:#f59e0b;"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;"></i>Pending</div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline anim d4" id="timelineBox">
+    <div class="timeline-item">
+      <div class="timeline-dot active" id="dot1"><i class="fa-solid fa-hourglass-half"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title" id="step1Title">Payment Verification</div>
+        <div class="timeline-desc" id="step1Desc">Confirming your deposit transaction</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" id="dot2"><i class="fa-solid fa-rotate-left"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title" id="step2Title">Refund Processing</div>
+        <div class="timeline-desc" id="step2Desc">Wallet balance and benefits release</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" id="dot3"><i class="fa-solid fa-check"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title" id="step3Title">Verification Complete</div>
+        <div class="timeline-desc" id="step3Desc">Your account is fully upgraded</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failed Message Box -->
+  <div class="failed-box anim d4" id="failedBox">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <div class="failed-text">
+      <strong>Payment could not be verified.</strong> <span id="declineReason">Our system was unable to confirm your deposit. This may be due to network delays, incorrect transfer details, or the transaction not yet reflecting. Please retry your payment or contact support.</span>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <button class="back-btn anim d5" id="backBtn" onclick="window.location.href='dashboard.html'">
+    <i class="fa-solid fa-house"></i> Back to Dashboard
+  </button>
+
+  <button class="retry-btn anim d5 hidden" id="retryBtn" onclick="window.location.href='upgrade.html'">
+    <i class="fa-solid fa-rotate-right"></i> Retry Submission / Payment
+  </button>
+
+  <a class="support-link anim d5" id="supportLink" href="javascript:void(0)" onclick="openCustomerCareModal()">
+    <i class="fa-solid fa-headset"></i>
+    <span>Contact Customer Care</span>
+  </a>
+
+  <div class="footer anim d5">9jaCash 2026 • Real-Time Payments Gateway</div>
+
+</div>
+
+<script>
+  let userData = null;
+  let failedTimeout = null;
+  let firestoreListenerActive = false;
+
+  function formatExternalLink(url, defaultUrl) {
+    if (!url || typeof url !== 'string' || !url.trim()) return defaultUrl;
+    let clean = url.trim().replace(/^\/+/, '');
+    if (/^(https?:\/\/|tg:\/\/|whatsapp:\/\/)/i.test(clean)) return clean;
+    if (/^(t\.me|wa\.me|whatsapp\.com|telegram\.me)/i.test(clean)) return 'https://' + clean;
+    if (/^\+?\d+$/.test(clean)) return 'https://wa.me/' + clean.replace(/^\+/, '');
+    if (/^@?[a-zA-Z0-9_]+$/.test(clean)) {
+      let username = clean.startsWith('@') ? clean.slice(1) : clean;
+      return 'https://t.me/' + username;
+    }
+    return 'https://' + clean;
+  }
+  
+  try { userData = JSON.parse(localStorage.getItem("9jaCashUser")); } catch (e) { userData = null; }
+
+  function formatMoney(num) {
+    if (!num && num !== 0) return "₵0";
+    let n = parseFloat(num);
+    return isNaN(n) ? "₵0" : "₵" + n.toLocaleString("en-NG");
+  }
+
+  function loadLocalInfo() {
+    const storedUpgrade = localStorage.getItem("selectedPlan");
+    const storedPayout = localStorage.getItem("9jaCashPayoutKeyDetails");
+    
+    let itemName = "Upgrade Plan / Payout Key";
+    let price = 0;
+
+    if (storedPayout) {
+      try {
+        const parsed = JSON.parse(storedPayout);
+        itemName = parsed.plan || "Payout Key";
+        price = parsed.price || 0;
+      } catch(e) {}
+    } else if (storedUpgrade) {
+      try {
+        const parsed = JSON.parse(storedUpgrade);
+        itemName = parsed.name || "Plan Upgrade";
+        price = parsed.amount || parsed.price || 0;
+      } catch(e) {}
+    }
+
+    document.getElementById("itemDisplay").textContent = itemName;
+    document.getElementById("amountDisplay").textContent = formatMoney(price);
+  }
+
+  function startFirestoreStatusListener() {
+    if (!window._9jaCash || !window._9jaCash.db) {
+      setTimeout(startFirestoreStatusListener, 1000);
+      return;
+    }
+
+    if (!userData || (!userData.phone && !userData.email)) {
+      failedTimeout = setTimeout(function() {
+        switchToFailed("Admin could not confirm your transfer within the time limit. Please check bank receipt details and resubmit.");
+      }, 10000);
+      return;
+    }
+
+    const db = window._9jaCash.db;
+    let query = db.collection('payment_requests');
+    if (userData.phone) {
+      query = query.where('phone', '==', userData.phone);
+    } else {
+      query = query.where('email', '==', userData.email);
+    }
+
+    failedTimeout = setTimeout(function() {
+      if (!firestoreListenerActive) {
+        switchToFailed("Admin confirmation pending timeout. Please check your bank receipt details and retry.");
+      }
+    }, 10000);
+
+    query.orderBy('createdAt', 'desc').limit(1).onSnapshot(function(snapshot) {
+      if (snapshot.empty) return;
+      
+      const latestDoc = snapshot.docs[0].data();
+      const status = latestDoc.status;
+
+      if (status === "approved" || status === "confirmed") {
+        firestoreListenerActive = true;
+        if (failedTimeout) clearTimeout(failedTimeout);
+        applyApprovedRequest();
+      } else if (status === "rejected" || status === "declined") {
+        firestoreListenerActive = true;
+        if (failedTimeout) clearTimeout(failedTimeout);
+        switchToFailed(latestDoc.admin_note || latestDoc.reason || "Admin could not confirm your transfer. Please check bank receipt details and resubmit.");
+      }
+    }, function(error) {
+      console.warn("Firestore snapshot listener error:", error);
+    });
+  }
+
+  function applyApprovedRequest() {
+    if (!userData || (!userData.phone && !userData.email)) {
+      window.location.href = "dashboard.html";
+      return;
+    }
+
+    const db = window._9jaCash.db;
+    let query = db.collection('users');
+    let userQuery = userData.phone ? query.where('phone', '==', userData.phone) : query.where('email', '==', userData.email);
+
+    userQuery.limit(1).get()
+      .then(function(querySnapshot) {
+        if (!querySnapshot.empty) {
+          const freshUser = querySnapshot.docs[0].data();
+          localStorage.setItem("9jaCashUser", JSON.stringify(freshUser));
+        }
+      })
+      .catch(function(err) {
+        console.warn("Could not refresh user details from Firestore:", err);
+      })
+      .finally(function() {
+        window.location.href = "dashboard.html";
+      });
+  }
+
+  function switchToFailed(reason) {
+    if (failedTimeout) clearTimeout(failedTimeout);
+
+    const ring = document.getElementById("processRing");
+    const icon = document.getElementById("processIcon");
+    ring.classList.add("failed");
+    icon.className = "fa-solid fa-circle-xmark";
+    
+    document.getElementById("mainTitle").textContent = "Payment Verification Failed";
+    document.getElementById("mainSub").textContent = "We could not verify your purchase. Please view details below.";
+    
+    document.getElementById("statusIconBox").classList.add("failed");
+    document.getElementById("statusIcon").className = "fa-solid fa-circle-xmark";
+    document.getElementById("statusTitle").textContent = "Payment Not Confirmed";
+    document.getElementById("statusSub").textContent = "Transaction verification unsuccessful";
+    
+    const statusVal = document.getElementById("statusValue");
+    statusVal.className = "status-value red";
+    statusVal.style.color = "#ef4444";
+    statusVal.innerHTML = '<i class="fa-solid fa-circle-xmark" style="font-size:10px;margin-right:6px;"></i>Failed';
+    
+    document.getElementById("dot1").className = "timeline-dot failed";
+    document.getElementById("dot1").innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    document.getElementById("step1Title").textContent = "Payment Not Found";
+    document.getElementById("step1Desc").textContent = "We could not verify your deposit transaction";
+    
+    document.getElementById("dot2").className = "timeline-dot";
+    document.getElementById("dot2").innerHTML = '<i class="fa-solid fa-ban"></i>';
+    document.getElementById("step2Title").textContent = "Refund Cancelled";
+    document.getElementById("step2Desc").textContent = "No deposit confirmed — refund not applicable";
+    
+    document.getElementById("dot3").className = "timeline-dot";
+    document.getElementById("dot3").innerHTML = '<i class="fa-solid fa-lock"></i>';
+    document.getElementById("step3Title").textContent = "Account Pending";
+    document.getElementById("step3Desc").textContent = "Complete verification to unlock full features";
+
+    document.getElementById("declineReason").textContent = reason;
+    document.getElementById("failedBox").classList.add("show");
+    document.getElementById("retryBtn").classList.remove("hidden");
+  }
+
+  window.addEventListener("DOMContentLoaded", function() {
+    loadLocalInfo();
+    startFirestoreStatusListener();
+    loadSocialHandles();
+  });
+
+  function openCustomerCareModal() {
+    const modal = document.getElementById("customerCareModal");
+    if (modal) {
+      updateCustomerCareLinks();
+      modal.classList.add('show');
+    }
+  }
+  
+  function closeCustomerCareModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    const modal = document.getElementById("customerCareModal");
+    if (modal) {
+      modal.classList.remove('show');
+    }
+  }
+
+  // Social handles loading logic matched from reference script (9).js
+  let socialHandles = { telegram: "", whatsapp: "" };
+  try {
+    const cached = JSON.parse(localStorage.getItem("9jaCashSocialHandles"));
+    if (cached) socialHandles = { telegram: cached.telegram || "", whatsapp: cached.whatsapp || "" };
+  } catch (e) { }
+
+  function buildTelegramUrl(handle) {
+    if (!handle) return "";
+    return formatExternalLink(String(handle), "");
+  }
+
+  function buildWhatsappUrl(handle) {
+    if (!handle) return "";
+    const clean = String(handle).trim();
+    if (/^(https?:\/\/|whatsapp:\/\/)/i.test(clean)) return clean;
+    const digits = clean.replace(/[^\d]/g, "");
+    return digits ? "https://wa.me/" + digits : "";
+  }
+
+  function updateCustomerCareLinks() {
+    const tg = document.getElementById("modalTelegramBtn");
+    const wa = document.getElementById("modalWhatsappBtn");
+    const tgUrl = buildTelegramUrl(socialHandles.telegram);
+    const waUrl = buildWhatsappUrl(socialHandles.whatsapp);
+    if (tg && tgUrl) tg.href = tgUrl;
+    if (wa && waUrl) {
+      wa.href = waUrl + (waUrl.indexOf("?") === -1 ? "?text=" + encodeURIComponent("Hello 9jaCash Support, I need assistance") : "");
+    }
+  }
+
+  function loadSocialHandles() {
+    if (!window._9jaCash || !window._9jaCash.db) return;
+    window._9jaCash.db.collection("settings").doc("redirects").onSnapshot(function (doc) {
+      if (!doc.exists) return;
+      const d = doc.data() || {};
+      socialHandles = {
+        telegram: d.failedSupportHandle || "",
+        whatsapp: d.whatsappHandle || ""
+      };
+      try { localStorage.setItem("9jaCashSocialHandles", JSON.stringify(socialHandles)); } catch (e) { }
+      updateCustomerCareLinks();
+    }, function (err) { });
+  }
+
+  setTimeout(loadSocialHandles, 800);
+</script>
+
+<!-- CUSTOMER CARE SELECTION MODAL -->
+<div id="customerCareModal" class="customer-care-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:99999; align-items:center; justify-content:center;">
+  <div style="background:linear-gradient(145deg, #111827, #0f172a); border:1px solid rgba(255,255,255,0.12); border-radius:24px; width:90%; max-width:400px; padding:28px 24px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7); position:relative;">
+    <button onclick="closeCustomerCareModal()" style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.08); border:none; color:#94a3b8; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
+    
+    <div style="width:64px; height:64px; margin:0 auto 16px auto; background:linear-gradient(135deg, #6366f1, #8b5cf6); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 25px rgba(99,102,241,0.5);">
+      <i class="fa-solid fa-headset" style="font-size:28px; color:white;"></i>
+    </div>
+    
+    <h3 style="font-size:20px; font-weight:800; color:white; margin:0 0 6px 0;">Customer Care Support</h3>
+    <p style="font-size:13px; color:#94a3b8; margin:0 0 24px 0;">Select your preferred channel to connect with our official support team:</p>
+    
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <!-- WhatsApp Option -->
+      <a id="modalWhatsappBtn" href="https://wa.me/2349000000000?text=Hello%209jaCash%20Support,%20I%20need%20assistance" target="_blank" style="display:flex; align-items:center; gap:16px; background:linear-gradient(135deg, #128c7e, #25d366); color:white; text-decoration:none; padding:16px 20px; border-radius:16px; font-weight:700; font-size:15px; box-shadow:0 10px 20px rgba(37,211,102,0.25);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-1.157 4.228 4.305-1.127z"/></svg>
+        <div style="text-align:left;">
+          <div style="font-size:15px; font-weight:800;" class="support-title">WhatsApp Support</div>
+          <div style="font-size:11px; opacity:0.85; font-weight:500;" class="support-desc">Instant 24/7 Live Chat Assistance</div>
+        </div>
+      </a>
+      
+      <!-- Telegram Option -->
+      <a id="modalTelegramBtn" href="https://t.me/apex_customercare" target="_blank" style="display:flex; align-items:center; gap:16px; background:linear-gradient(135deg, #0088cc, #229ed9); color:white; text-decoration:none; padding:16px 20px; border-radius:16px; font-weight:700; font-size:15px; box-shadow:0 10px 20px rgba(0,136,204,0.25);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.536-.196 1.006.128.832.941z"/></svg>
+        <div style="text-align:left;">
+          <div style="font-size:15px; font-weight:800;" class="support-title">Telegram Support</div>
+          <div style="font-size:11px; opacity:0.85; font-weight:500;" class="support-desc">Direct Support Chat</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
