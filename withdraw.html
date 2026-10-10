@@ -969,6 +969,20 @@ function submitWithdrawal() {
       });
       localStorage.setItem("transactionHistory", JSON.stringify(tx));
 
+      // Store withdrawal notification
+      let userNotifs = [];
+      try {
+        userNotifs = JSON.parse(localStorage.getItem("userNotifications")) || [];
+      } catch(e) { userNotifs = []; }
+      userNotifs.unshift({
+        id: Date.now(),
+        title: "Withdrawal Submitted",
+        desc: `Your withdrawal request of GH₵${fmt2(amount)} to ${bankName} (${acct}) has been submitted successfully.`,
+        timestamp: Date.now(),
+        read: false
+      });
+      localStorage.setItem("userNotifications", JSON.stringify(userNotifs));
+
       localStorage.setItem("pendingBounce", JSON.stringify({
         amount: amount,
         timestamp: Date.now()
