@@ -1108,22 +1108,35 @@ document.addEventListener("DOMContentLoaded", function () {
   initSocialPopup();
 });
 
-let userNotifications = [
-  {
-    id: 1,
-    title: "Welcome to Ghana Cash!",
-    desc: "Start mining daily to earn rewards and build up your balance.",
-    time: "2 mins ago",
-    read: false
-  },
-  {
-    id: 2,
-    title: "Daily Check-In Ready",
-    desc: "Don't forget to claim your daily check-in streak reward.",
-    time: "1 hour ago",
-    read: false
+// ---------- Notifications from localStorage ----------
+let userNotifications = [];
+try {
+  const storedNotifs = localStorage.getItem("userNotifications");
+  if (storedNotifs) {
+    userNotifications = JSON.parse(storedNotifs);
+  } else {
+    userNotifications = [];
+    localStorage.setItem("userNotifications", JSON.stringify(userNotifications));
   }
-];
+} catch (e) {
+  userNotifications = [];
+}
+
+// Helper to format timestamps into accurate "time ago" strings
+function getTimeAgo(timestamp) {
+  if (!timestamp) return "Recently";
+  const diffMs = Date.now() - Number(timestamp);
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return "Just now";
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
 
 function openNotificationsModal() {
   const modal = document.getElementById('notificationsOverlay');
@@ -1173,22 +1186,29 @@ function renderNotifications() {
     return;
   }
 
-  container.innerHTML = userNotifications.map(n => `
-    <div class="notif-item ${!n.read ? 'unread' : ''}">
-      <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <i class="fa-solid fa-bell" style="font-size: 12px;"></i>
+  container.innerHTML = userNotifications.map(n => {
+    const ts = n.timestamp || (typeof n.id === 'number' && n.id > 1000000000 ? n.id : Date.now());
+    const timeStr = getTimeAgo(ts);
+    return `
+      <div class="notif-item ${!n.read ? 'unread' : ''}">
+        <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="fa-solid fa-bell" style="font-size: 12px;"></i>
+        </div>
+        <div style="flex: 1;">
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-desc">${n.desc}</div>
+          <div class="notif-time">${timeStr}</div>
+        </div>
       </div>
-      <div style="flex: 1;">
-        <div class="notif-title">${n.title}</div>
-        <div class="notif-desc">${n.desc}</div>
-        <div class="notif-time">${n.time}</div>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function markAllNotificationsAsRead() {
   userNotifications.forEach(n => n.read = true);
+  try {
+    localStorage.setItem("userNotifications", JSON.stringify(userNotifications));
+  } catch (e) {}
   renderNotifications();
   updateBellDot();
   if (typeof showToast === 'function') {
