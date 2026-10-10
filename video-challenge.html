@@ -195,7 +195,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <script>
 let userData = null;
-try { userData = JSON.parse(localStorage.getItem("9jaCashUser")); } catch (e) { userData = null; }
+try { userData = JSON.parse(localStorage.getItem("ghanaCashUser")) || JSON.parse(localStorage.getItem("9jaCashUser")); } catch (e) { userData = null; }
 
 // ---------- Cloudinary Unsigned Setup ----------
 const CLOUDINARY_CLOUD_NAME = "nhm2xhew";       // Replace with your Cloud Name
@@ -203,6 +203,41 @@ const CLOUDINARY_UPLOAD_PRESET = "video_challenge"; // Replace with your Unsigne
 
 const MAX_MB = 50;
 const ROOT = 'videoChallenge';
+
+// ---------- Notification Helper ----------
+function addNotification(title, desc) {
+  try {
+    let notifs = JSON.parse(localStorage.getItem("userNotifications")) || [
+      {
+        id: 1,
+        title: "Welcome to Ghana Cash!",
+        desc: "Start mining daily to earn rewards and build up your balance.",
+        time: "2 mins ago",
+        read: false
+      },
+      {
+        id: 2,
+        title: "Daily Check-In Ready",
+        desc: "Don't forget to claim your daily check-in streak reward.",
+        time: "1 hour ago",
+        read: false
+      }
+    ];
+
+    notifs.unshift({
+      id: Date.now(),
+      title: title,
+      desc: desc,
+      time: "Just now",
+      read: false
+    });
+
+    if (notifs.length > 30) notifs.pop();
+    localStorage.setItem("userNotifications", JSON.stringify(notifs));
+  } catch (e) {
+    console.error("Error saving notification:", e);
+  }
+}
 
 // ---------- Firebase Initialization ----------
 let db = null;
@@ -222,6 +257,8 @@ function initDb() {
 const SUBMIT_HTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Upload &amp; Submit Video';
 let statusUnsubscribe = null;
 let _lastSub = null;
+let _initialLoad = true;
+let _currentStatus = null;
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -241,7 +278,24 @@ function checkSubmissionStatus() {
 
   statusUnsubscribe = userRef().onSnapshot(doc => {
     _lastSub = doc.exists ? doc.data() : null;
-    if (_lastSub && _lastSub.status) renderStatus(_lastSub);
+    if (_lastSub && _lastSub.status) {
+      renderStatus(_lastSub);
+
+      // Handle status change notifications
+      if (_initialLoad) {
+        _initialLoad = false;
+        _currentStatus = _lastSub.status;
+      } else if (_lastSub.status !== _currentStatus) {
+        const prevStatus = _currentStatus;
+        _currentStatus = _lastSub.status;
+
+        if (_currentStatus === 'Approved') {
+          addNotification("Video Challenge Approved! 🎉", "Congratulations! Your video was approved and your reward has been credited.");
+        } else if (_currentStatus === 'Rejected') {
+          addNotification("Video Challenge Declined", "Your video submission was declined. Please check the requirements and re-submit.");
+        }
+      }
+    }
   }, err => console.error('Firestore status check error:', err));
 }
 
@@ -382,6 +436,12 @@ document.getElementById('submissionForm').addEventListener('submit', async funct
     };
 
     await userRef().set(userDoc, { merge: true });
+
+    // 3. Add notification to user's notification list
+    addNotification(
+      "Video Challenge Submitted 🎥", 
+      "Your video testimony has been uploaded successfully and is currently pending review."
+    );
 
     btn.disabled = false;
     btn.innerHTML = SUBMIT_HTML;
