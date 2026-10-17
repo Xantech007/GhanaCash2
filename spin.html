@@ -2436,7 +2436,7 @@
       })
       .catch(err => {
         // Fallback local spin calculation if backend API server is offline
-        const randomIndex = Math.floor(Math.random() * segments.length);
+        const randomIndex = pickWeightedSegmentIndex();
         const targetSeg = segments[randomIndex];
         const mult = targetSeg.multiplier;
         const payout = stakeAmount * mult;
@@ -2444,6 +2444,40 @@
         
         executeCasinoSpin(randomIndex, mult, payout, fallbackFinalBalance);
       });
+    }
+
+    // ========== WEIGHTED FALLBACK ODDS (percent, same order as `segments`) ==========
+    // Losing (BOMB, 0.2x, 0.5x, 0.8x) = 80%. Remaining 20% is split by multiplier:
+    // the higher the multiplier, the rarer it is. Total = 100. Theoretical RTP ≈ 50.4%.
+    const SEGMENT_WEIGHTS = [
+      40,   // BOMB (0x)
+      20,   // 0.2x
+      13,   // 0.5x
+      7,    // 0.8x
+      9,    // 1x
+      4,    // 1.2x
+      2.5,  // 1.5x
+      1.5,  // 2x
+      1,    // 2.5x
+      0.7,  // 3x
+      0.4,  // 3.5x
+      0.3,  // 4x
+      0.2,  // 5x
+      0.15, // 6x
+      0.1,  // 8x
+      0.08, // 10x
+      0.05, // 20x
+      0.02  // 100x
+    ];
+
+    function pickWeightedSegmentIndex() {
+      const total = SEGMENT_WEIGHTS.reduce((a, b) => a + b, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < SEGMENT_WEIGHTS.length; i++) {
+        r -= SEGMENT_WEIGHTS[i];
+        if (r < 0) return i;
+      }
+      return 0;
     }
 
     function executeCasinoSpin(targetIndex, multiplier, payoutAmount, finalBalance) {
@@ -2536,14 +2570,14 @@
           stakeAmount: parseFloat(stakeInput.value) || 0,
           multiplier: multiplier,
           payoutAmount: payoutAmount,
-          title: multiplier === 0 ? "BOMB" : (multiplier >= 8 ? "JACKPOT" : "WIN")
+          title: multiplier === 0 ? "BOMB" : (multiplier < 1 ? "LOSS" : (multiplier >= 8 ? "JACKPOT" : "WIN"))
         });
       }
 
       hostImg.style.animation = 'none';
       hostImg.offsetHeight;
 
-      if (multiplier === 0) {
+      if (multiplier < 1) {
         playExplosionSound();
         
         const screen = document.getElementById("gameScreen");
@@ -2552,19 +2586,30 @@
         screen.classList.add("shake");
         overlay.classList.add("explosion-active");
 
-        statusMessage.textContent = "BOMB BLOWOUT! 💣";
+        statusMessage.textContent = multiplier === 0 ? "BOMB BLOWOUT! 💣" : `${multiplier}x — YOU LOST! 💣`;
         statusMessage.style.color = "var(--neon-red)";
         statusMessage.style.textShadow = "0 0 10px var(--neon-red)";
 
-        hostSpeech.textContent = "Oh no! The bomb exploded! Better luck on your next spin!";
-        speak("Oh no! Bomb blast! You lost your stake!");
+        hostSpeech.textContent = multiplier === 0
+          ? "Oh no! The bomb exploded! Better luck on your next spin!"
+          : "Oh no! The bomb exploded! You only got a small part of your stake back.";
+        speak(multiplier === 0 ? "Oh no! Bomb blast! You lost your stake!" : "Oh no! Bomb blast! You lost this round!");
+
+        // Partial refund (0.2x / 0.5x / 0.8x): show the returned amount in the wallet
+        if (payoutAmount > 0) {
+          setTimeout(() => animateWalletCount(finalBalance), 1200);
+        }
 
         hostImg.style.transform = 'scale(0.92)';
 
         setTimeout(() => {
           screen.classList.remove("shake");
           overlay.classList.remove("explosion-active");
-          showResultModal(0, 0, "💣 BOMB BLAST!", "BOOM! You hit the bomb segment and lost your stake! Better luck on your next spin.");
+          if (multiplier === 0) {
+            showResultModal(0, 0, "💣 BOMB BLAST!", "BOOM! You hit the bomb segment and lost your stake! Better luck on your next spin.");
+          } else {
+            showResultModal(multiplier, payoutAmount, "💣 BOMB BLAST!", `BOOM! You landed on ${multiplier}x and lost this round. Only GH₵${payoutAmount.toLocaleString()} of your stake was returned.`);
+          }
         }, 1200);
 
       } else {
@@ -2614,9 +2659,9 @@
       modalTitle.textContent = title;
       modalDesc.textContent = desc;
 
-      if (multiplier === 0) {
+      if (multiplier < 1) {
         modalIcon.textContent = "💥";
-        modalPayout.textContent = "BOOM!";
+        modalPayout.textContent = multiplier === 0 ? "BOOM!" : "BOOM! −GH₵" + ((parseFloat(stakeInput.value) || 0) - winnings).toLocaleString();
         modalPayout.style.color = "var(--neon-red)";
       } else {
         modalIcon.textContent = multiplier >= 8 ? "👑" : "🎉";
