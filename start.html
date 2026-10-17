@@ -363,63 +363,41 @@ body.dark-mode .referrer-box{background:rgba(99,102,241,0.15);border-color:rgba(
 </div>
 <!-- ONBOARDING -->
 <div id="onboardStep" class="hide app">
-<!-- Step 1: Telegram -->
 <div id="ob1" class="ob-card s1">
-<div class="icon-box bg-gradient-to-br from-[#229ed9] to-[#1d98d2]">
-<i class="fa-brands fa-telegram text-white text-2xl"></i>
-</div>
-<h2 class="text-xl font-extrabold mb-2">Join Our Community</h2>
-<p class="text-sm text-[#64748b] mb-6 leading-relaxed">Get instant alerts on bonuses, withdrawals & exclusive rewards.</p>
-<a id="tgLink" href="#" target="_blank" class="btn-primary block mb-3" style="background:linear-gradient(135deg,#229ed9,#1d98d2);box-shadow:0 4px 20px rgba(34,158,217,0.3);" onclick="tgClicked()">
-<i class="fa-brands fa-telegram"></i> <span>Join Telegram</span>
-</a>
-<button id="skipBtn" class="skip-btn" disabled onclick="nextOb(2)"> Skip for now (<span id="skipTimer">10</span>s) </button>
-<div class="step-dots">
-<div class="dot active"></div>
-<div class="dot"></div>
-<div class="dot"></div>
-<div class="dot"></div>
-</div>
-<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 1 of 4</p>
-</div>
-<!-- Step 2: Mining -->
-<div id="ob2" class="ob-card s1 hide">
 <div class="icon-box bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]">
 <i class="fa-solid fa-coins text-white text-2xl"></i>
 </div>
 <h2 class="text-xl font-extrabold mb-2">Earn Every Minute</h2>
 <p class="text-sm text-[#64748b] mb-6 leading-relaxed">Auto mining runs 24/7. Watch your balance grow in real-time.</p>
-<button onclick="nextOb(3)" class="btn-primary">
+<button onclick="nextOb(2)" class="btn-primary">
 <span>Next</span> <i class="fa-solid fa-chevron-right"></i>
 </button>
 <div class="step-dots">
-<div class="dot"></div>
 <div class="dot active"></div>
 <div class="dot"></div>
 <div class="dot"></div>
 </div>
-<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 2 of 4</p>
+<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 1 of 3</p>
 </div>
-<!-- Step 3: Daily -->
-<div id="ob3" class="ob-card s1 hide">
+<!-- Step 2: Daily -->
+<div id="ob2" class="ob-card s1 hide">
 <div class="icon-box bg-gradient-to-br from-[#f59e0b] to-[#d97706]">
 <i class="fa-solid fa-calendar-check text-white text-2xl"></i>
 </div>
 <h2 class="text-xl font-extrabold mb-2">Daily Rewards</h2>
 <p class="text-sm text-[#64748b] mb-6 leading-relaxed">Check in every day to collect bonus cash and boost mining power.</p>
-<button onclick="nextOb(4)" class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 20px rgba(245,158,11,0.3);">
+<button onclick="nextOb(3)" class="btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 20px rgba(245,158,11,0.3);">
 <span>Next</span> <i class="fa-solid fa-chevron-right"></i>
 </button>
 <div class="step-dots">
 <div class="dot"></div>
-<div class="dot"></div>
 <div class="dot active"></div>
 <div class="dot"></div>
 </div>
-<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 3 of 4</p>
+<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 2 of 3</p>
 </div>
-<!-- Step 4: Ready -->
-<div id="ob4" class="ob-card s1 hide">
+<!-- Step 3: Ready -->
+<div id="ob3" class="ob-card s1 hide">
 <div class="icon-box bg-gradient-to-br from-[#10b981] to-[#34d399]">
 <i class="fa-solid fa-rocket text-white text-2xl"></i>
 </div>
@@ -431,10 +409,9 @@ body.dark-mode .referrer-box{background:rgba(99,102,241,0.15);border-color:rgba(
 <div class="step-dots">
 <div class="dot"></div>
 <div class="dot"></div>
-<div class="dot"></div>
 <div class="dot active"></div>
 </div>
-<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 4 of 4</p>
+<p class="text-xs text-[#94a3b8] mt-3 font-medium">Step 3 of 3</p>
 </div>
 </div>
 <script>
@@ -1025,60 +1002,11 @@ body: JSON.stringify({ email: data.email, fullName: data.fullName })
 function startOnboarding() {
 document.getElementById('successStep').classList.add('hide');
 document.getElementById('onboardStep').classList.remove('hide');
-loadTgLink();
-startSkipTimer();
-}
-
-// ========== TELEGRAM ==========
-function loadTgLink() {
-const defaultLink = 'https://t.me/YourGhanaCashChannel';
-const el = document.getElementById('tgLink');
-if (window._9jaCash && window._9jaCash.db) {
-window._9jaCash.db.collection('settings').doc('payment').get()
-.then(function(doc) {
-let rawLink = (doc.exists && doc.data().telegramLink) ? doc.data().telegramLink.trim() : defaultLink;
-if (!/^https?:\/\//i.test(rawLink)) {
-rawLink = 'https://' + rawLink;
-}
-el.href = rawLink;
-})
-.catch(function() {
-el.href = defaultLink;
-});
-} else {
-el.href = defaultLink;
-}
-}
-
-function tgClicked() {
-setTimeout(function() {
-nextOb(2);
-}, 600);
-}
-
-// ========== SKIP TIMER ==========
-let skipCountdown;
-function startSkipTimer() {
-const skipBtn = document.getElementById('skipBtn');
-const timerSpan = document.getElementById('skipTimer');
-let seconds = 10;
-skipBtn.disabled = true;
-timerSpan.textContent = seconds;
-
-skipCountdown = setInterval(function() {
-seconds--;
-timerSpan.textContent = seconds;
-if (seconds <= 0) {
-clearInterval(skipCountdown);
-skipBtn.disabled = false;
-skipBtn.innerHTML = 'Skip for now <i class="fa-solid fa-chevron-right text-xs ml-1"></i>';
-}
-}, 1000);
 }
 
 // ========== ONBOARDING NAV ==========
 function nextOb(n) {
-for (let i = 1; i <= 4; i++) {
+for (let i = 1; i <= 3; i++) {
 document.getElementById('ob' + i).classList.add('hide');
 }
 document.getElementById('ob' + n).classList.remove('hide');
