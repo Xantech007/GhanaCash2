@@ -26,6 +26,8 @@ body.dark-mode .inp::placeholder{color:#64748b;}
 body.dark-mode select.inp option{background:#1e293b;color:#f8fafc;}
 body.dark-mode .lbl{color:#94a3b8;}
 body.dark-mode .count{color:#64748b;}
+body.dark-mode .promo-ok{color:#34d399;}
+body.dark-mode .promo-bad{color:#f87171;}
 body.dark-mode .skip-btn{color:#94a3b8;}
 body.dark-mode .skip-btn:hover{color:#818cf8;}
 body.dark-mode .skip-btn:disabled{color:#475569 !important;}
@@ -75,6 +77,8 @@ body.dark-mode .password-toggle:hover{color:#818cf8;}
 /* Label */
 .lbl{display:block;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
 /* Character count */
+.promo-ok{color:#10b981;font-weight:700;}
+.promo-bad{color:#ef4444;font-weight:700;}
 .count{text-align:right;font-size:11px;color:#94a3b8;margin-top:6px;font-weight:500;}
 
 /* Primary button — matches dashboard */
@@ -425,7 +429,7 @@ const stepLabels = [
 "Step 2 of 5 — Payout Method",
 "Step 3 of 5 — Account Details",
 "Step 4 of 5 — Full Name",
-"Step 5 of 5 — Password"
+"Step 5 of 5 — Password & Promo Code"
 ];
 const fields = ['fieldPhone', 'fieldMethod', 'fieldAccount', 'fieldName', 'fieldPassword'];
 const inputs = {
@@ -798,8 +802,6 @@ bankName: bankName,
 accountNumber: accountNumber,
 accountVerified: nameAutoFilled,
 password: password,
-promoCode: null,
-promoBonus: false,
 createdAt: new Date().toISOString(),
 balance: SIGNUP_BONUS,
 miningPower: 1,
