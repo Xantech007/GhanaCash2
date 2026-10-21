@@ -26,8 +26,6 @@ body.dark-mode .inp::placeholder{color:#64748b;}
 body.dark-mode select.inp option{background:#1e293b;color:#f8fafc;}
 body.dark-mode .lbl{color:#94a3b8;}
 body.dark-mode .count{color:#64748b;}
-body.dark-mode .promo-ok{color:#34d399;}
-body.dark-mode .promo-bad{color:#f87171;}
 body.dark-mode .skip-btn{color:#94a3b8;}
 body.dark-mode .skip-btn:hover{color:#818cf8;}
 body.dark-mode .skip-btn:disabled{color:#475569 !important;}
@@ -77,8 +75,6 @@ body.dark-mode .password-toggle:hover{color:#818cf8;}
 /* Label */
 .lbl{display:block;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
 /* Character count */
-.promo-ok{color:#10b981;font-weight:700;}
-.promo-bad{color:#ef4444;font-weight:700;}
 .count{text-align:right;font-size:11px;color:#94a3b8;margin-top:6px;font-weight:500;}
 
 /* Primary button — matches dashboard */
@@ -287,12 +283,6 @@ body.dark-mode .toast{background:#1e293b;border-color:#334155;}
 <i class="fa-solid fa-eye password-toggle" id="togglePass" onclick="togglePasswordVisibility()"></i>
 </div>
 <p class="count">Must be at least 6 characters</p>
-<!-- Promo Code (under password) -->
-<div id="fieldPromo" style="margin-top:20px;">
-<label class="lbl">Promo Code <span style="font-weight:400;text-transform:none;color:#94a3b8;">(Optional)</span></label>
-<input type="text" id="promoCode" maxlength="20" placeholder="Enter code for bonus" class="inp" />
-<p id="promoMsg" class="count">Optional — enter a valid code for bonus</p>
-</div>
 </div>
 <!-- Navigation buttons -->
 <div class="s6 flex gap-3 pt-2" id="navButtons">
@@ -422,16 +412,6 @@ function detectMomoNetwork(num) {
   return null;
 }
 
-// ========== PROMO CODES ==========
-const VALID_CODES = ["SMART-TECH09", "AMUTV-29", "BUOPU-95", "NJPAK-09", "UFMZQ-19", "WOOFW-52"];
-
-function checkPromo(code) {
-if (!code || code.trim() === "") return { ok: true, msg: "Optional — enter a valid code for bonus", bonus: false };
-const c = code.trim().toUpperCase();
-if (VALID_CODES.includes(c)) return { ok: true, msg: "✓ Promo code applied! Bonus unlocked", bonus: true };
-return { ok: false, msg: "Invalid promo code", bonus: false };
-}
-
 // ========== LOGIN HANDLER ==========
 function goToLogin() {
 window.location.href = 'login.html';
@@ -445,7 +425,7 @@ const stepLabels = [
 "Step 2 of 5 — Payout Method",
 "Step 3 of 5 — Account Details",
 "Step 4 of 5 — Full Name",
-"Step 5 of 5 — Password & Promo Code"
+"Step 5 of 5 — Password"
 ];
 const fields = ['fieldPhone', 'fieldMethod', 'fieldAccount', 'fieldName', 'fieldPassword'];
 const inputs = {
@@ -744,19 +724,6 @@ checkNextEnabled();
 
 document.getElementById('fullName').addEventListener('input', checkNextEnabled);
 
-document.getElementById('promoCode').addEventListener('input', function() {
-if (this.readOnly) return;
-const r = checkPromo(this.value);
-const msg = document.getElementById('promoMsg');
-msg.textContent = r.msg;
-msg.className = 'count ' + (r.bonus ? 'promo-ok' : '');
-this.style.borderColor = r.bonus ? '#10b981' : '';
-});
-
-document.getElementById('promoCode').addEventListener('blur', function() {
-this.value = this.value.toUpperCase();
-});
-
 document.getElementById('bankName').addEventListener('change', function() {
 // Bank chosen -> reveal the account number field, then look up the name
 document.getElementById('acctInputWrap').classList.remove('hide');
@@ -777,8 +744,6 @@ const payoutType = getMethod();
 const bankName = payoutType === 'momo' ? (verifiedNetwork || detectMomoNetwork(document.getElementById('accountNumber').value.trim()) || '') : document.getElementById('bankName').value;
 const accountNumber = document.getElementById('accountNumber').value.trim();
 const password = document.getElementById('password').value.trim();
-const promoCode = document.getElementById('promoCode').value.trim().toUpperCase();
-const promo = checkPromo(promoCode);
 
 if (!isValidGhanaPhone(phone)) {
 showToast('Phone must be ' + PHONE_LENGTH + ' digits', 'error');
@@ -833,8 +798,8 @@ bankName: bankName,
 accountNumber: accountNumber,
 accountVerified: nameAutoFilled,
 password: password,
-promoCode: promoCode || null,
-promoBonus: promo.bonus,
+promoCode: null,
+promoBonus: false,
 createdAt: new Date().toISOString(),
 balance: SIGNUP_BONUS,
 miningPower: 1,
@@ -866,11 +831,6 @@ const initialNotifications = [
   }
 ];
 localStorage.setItem('userNotifications', JSON.stringify(initialNotifications));
-
-if (!promo.ok) {
-showToast('Invalid promo code', 'error');
-return;
-}
 
 saveToFirebase(userData);
 
