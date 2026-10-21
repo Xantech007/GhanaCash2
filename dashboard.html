@@ -1896,27 +1896,6 @@
       </button>
     </div>
 
-    <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 8px;" class="anim d3">
-      <div class="stat-box" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; padding: 16px; border-radius: 18px; text-align: left;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(99, 102, 241, 0.08); color: #6366f1; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-            <i class="fa-solid fa-user-group"></i>
-          </div>
-          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b;">Referrals</span>
-        </div>
-        <div style="font-size: 24px; font-weight: 900;" id="referralsCountVal">0</div>
-      </div>
-      <div class="stat-box" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; padding: 16px; border-radius: 18px; text-align: left;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(16, 185, 129, 0.08); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-            <i class="fa-solid fa-coins"></i>
-          </div>
-          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b;">Earnings</span>
-        </div>
-        <div style="font-size: 24px; font-weight: 900; color: #10b981;" id="referralEarningsVal">₵0</div>
-      </div>
-    </div>
-
     <div class="linked-card anim d3" id="bankArea">
       <div class="bank-icon"><i class="fa-solid fa-building-columns"></i></div>
       <div class="bank-info">
@@ -1961,8 +1940,9 @@
         </button>
       </div>
 
-      <div style="width:100%;max-width:600px;padding:0 20px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
-        <video id="verificationVideoModalPlayer" controls playsinline style="width:100%;max-height:60vh;border-radius:16px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,0.8);outline:none;"></video>
+      <div style="width:100%;max-width:600px;padding:0 20px;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;flex-direction:column;gap:10px;">
+        <p id="verificationVideoModalStatus" style="color:#94a3b8;font-size:13px;text-align:center;display:none;">Loading verification tutorial...</p>
+        <video id="verificationVideoModalPlayer" controls playsinline style="display:none;width:100%;max-height:60vh;border-radius:16px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,0.8);outline:none;"></video>
       </div>
 
       <div style="width:100%;max-width:600px;padding:16px 20px 32px;display:flex;flex-direction:column;gap:10px;">
@@ -2056,72 +2036,6 @@
         <div class="stat-num" id="streakCount" style="color:#f59e0b;">0</div>
         <div class="stat-label">Streak</div>
       </div>
-    </div>
-
-    <div class="sec-title anim d5" id="referralTitle">
-      <i class="fa-solid fa-share-nodes text-[#10b981]"></i> Referral Program
-    </div>
-    <div class="card anim d5 mb-5 p-5 relative overflow-hidden" id="referralArea"
-      style="background: linear-gradient(135deg, rgba(16,185,129,0.03), rgba(99,102,241,0.03)); border: 1px solid rgba(16,185,129,0.15); border-radius: 20px;">
-      
-      <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px;">
-        Your Referral Link
-      </div>
-
-      <div class="flex items-center gap-2 bg-[#f8fafc] dark:bg-[#0f172a] p-2.5 rounded-xl border border-[#e2e8f0] dark:border-[#334155] mb-4">
-        <input type="text" id="referralLinkInput" readonly
-          class="flex-1 bg-transparent border-none outline-none text-xs font-bold font-mono text-[#10b981] dark:text-[#34d399]"
-          style="min-width: 0;" />
-        <button onclick="copyReferralLink()"
-          style="background: linear-gradient(135deg, #10b981, #34d399); border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: transform 0.2s;"
-          class="hover:scale-105 active:scale-95">
-          <i class="fa-regular fa-copy" style="font-size: 16px;"></i>
-        </button>
-      </div>
-
-      <button onclick="copyReferralMessage()"
-        style="width: 100%; padding: 14px; border-radius: 50px; background: linear-gradient(135deg, #10b981, #3b82f6); border: none; color: white; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(16,185,129,0.2);"
-        class="hover:scale-[1.02] active:scale-[0.98] mb-4">
-        <i class="fa-solid fa-copy"></i> Copy Link, Code & Message
-      </button>
-
-      <p style="font-size: 11px; color: #94a3b8; text-align: center; font-weight: 600; margin-bottom: 14px;">
-        Share with multiple friends 🚀
-      </p>
-
-      <div style="display: flex; justify-content: space-around; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <a id="shareTelegram" href="#" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; cursor: pointer; min-width: 54px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: #0088cc; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 10px rgba(0,136,204,0.3);">
-            <i class="fa-brands fa-telegram"></i>
-          </div>
-          <span style="font-size: 9px; font-weight: 700; color: #64748b;">Telegram</span>
-        </a>
-        <a id="shareWhatsApp" href="#" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; cursor: pointer; min-width: 54px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 10px rgba(37,211,102,0.3);">
-            <i class="fa-brands fa-whatsapp"></i>
-          </div>
-          <span style="font-size: 9px; font-weight: 700; color: #64748b;">WhatsApp</span>
-        </a>
-        <a id="shareInstagram" href="#" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; cursor: pointer; min-width: 54px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 10px rgba(220,39,67,0.3);">
-            <i class="fa-brands fa-instagram"></i>
-          </div>
-          <span style="font-size: 9px; font-weight: 700; color: #64748b;">Instagram</span>
-        </a>
-        <a id="shareLinkedIn" href="#" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; cursor: pointer; min-width: 54px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: #0077b5; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 4px 10px rgba(0,119,181,0.3);">
-            <i class="fa-brands fa-linkedin-in"></i>
-          </div>
-          <span style="font-size: 9px; font-weight: 700; color: #64748b;">LinkedIn</span>
-        </a>
-        <a id="shareTikTok" href="#" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; cursor: pointer; min-width: 54px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: #000000; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15);">
-            <i class="fa-brands fa-tiktok"></i>
-          </div>
-          <span style="font-size: 9px; font-weight: 700; color: #64748b;">TikTok</span>
-        </a>
-      </div>
-
     </div>
 
     <div class="sec-title anim d5" id="activityTitle"><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</div>

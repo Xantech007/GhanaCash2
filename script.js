@@ -787,58 +787,72 @@ function handleVerifyClick() {
   openVerificationVideoModal();
 }
 
-function openVerificationVideoModal() {
+async function openVerificationVideoModal() {
   const modal = document.getElementById("verificationVideoModal");
-  if (modal) modal.style.display = "flex";
+  const player = document.getElementById("verificationVideoModalPlayer");
+  const status = document.getElementById("verificationVideoModalStatus");
+  if (!modal || !player || !status) return;
+
+  player.onerror = null;
+  player.pause();
+  player.removeAttribute("src");
+  player.style.display = "none";
+  player.load();
+  status.textContent = "Loading verification tutorial...";
+  status.style.display = "block";
+  modal.style.display = "flex";
+
+  try {
+    if (!db) throw new Error("Firebase is not available");
+    const tutorialDoc = await db.collection("settings").doc("verificationTutorial").get();
+    const videoUrl = tutorialDoc.exists ? tutorialDoc.data().videoUrl : "";
+
+    if (typeof videoUrl !== "string" || !/^https?:\/\//i.test(videoUrl.trim())) {
+      status.textContent = "The verification tutorial is not available yet. You can skip to continue.";
+      return;
+    }
+
+    player.onerror = function () {
+      player.style.display = "none";
+      status.textContent = "Unable to play the verification tutorial. You can skip to continue.";
+      status.style.display = "block";
+    };
+
+    player.src = videoUrl.trim();
+    player.style.display = "block";
+    status.style.display = "none";
+    player.load();
+  } catch (err) {
+    console.error("Failed to load verification tutorial:", err);
+    status.textContent = "Unable to load the verification tutorial. You can skip to continue.";
+  }
 }
 
 function skipVerificationVideo() {
   const modal = document.getElementById("verificationVideoModal");
   if (modal) modal.style.display = "none";
+  const player = document.getElementById("verificationVideoModalPlayer");
+  if (player) player.pause();
   verifyBankLink();
 }
 
 function proceedToVerify() {
   const modal = document.getElementById("verificationVideoModal");
   if (modal) modal.style.display = "none";
+  const player = document.getElementById("verificationVideoModalPlayer");
+  if (player) player.pause();
   verifyBankLink();
 }
 
 function verifyBankLink() { window.location.href = "verify.html"; }
 
 function initReferrals() {
-  const code = userData ? (userData.referralCode || userData.phone || "GHANACASH") : "GHANACASH";
-  const baseUrl = window.location.origin + window.location.pathname.replace("dashboard.html", "") + "start.html?ref=" + code;
-
-  const input = document.getElementById("referralLinkInput");
-  if (input) input.value = baseUrl;
-
-  const countEl = document.getElementById("referralsCountVal");
-  const earnEl = document.getElementById("referralEarningsVal");
-  if (countEl) countEl.textContent = userData.referralsCount || userData.referrals || 0;
-  if (earnEl) earnEl.textContent = formatMoney(userData.referralEarnings || 0);
-
-  const msg = encodeURIComponent("Join me on Ghana Cash to earn daily cash! Register here: " + baseUrl);
-  const shareTg = document.getElementById("shareTelegram");
-  if (shareTg) shareTg.href = "https://t.me/share/url?url=" + encodeURIComponent(baseUrl) + "&text=" + msg;
-  const shareWa = document.getElementById("shareWhatsApp");
-  if (shareWa) shareWa.href = "https://api.whatsapp.com/send?text=" + msg;
+  // Referral flow has been removed from this project.
 }
 
-function copyReferralLink() {
-  const input = document.getElementById("referralLinkInput");
-  if (input) {
-    input.select();
-    navigator.clipboard.writeText(input.value).then(() => showToast("Referral link copied!"));
-  }
-}
+function copyReferralLink() {}
 
-function copyReferralMessage() {
-  const input = document.getElementById("referralLinkInput");
-  const code = userData ? (userData.referralCode || userData.phone || "GHANACASH") : "GHANACASH";
-  const msg = "Join Ghana Cash today & earn daily cash!\nUse referral code: " + code + "\nLink: " + (input ? input.value : "");
-  navigator.clipboard.writeText(msg).then(() => showToast("Referral details copied!"));
-}
+function copyReferralMessage() {}
 
 function addToActivity(title, amount, type) {
   let activities = JSON.parse(localStorage.getItem("activities")) || [];
