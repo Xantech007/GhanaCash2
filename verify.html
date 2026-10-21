@@ -418,7 +418,7 @@ function loadFeeData() {
       .then(function(doc) {
         if (doc.exists) {
           feeData = doc.data();
-          if (feeData.amount) feeData.amount = parseFloat(feeData.amount) / 120;
+          if (feeData.amount) feeData.amount = parseFloat(feeData.amount);
           updateFeeDisplay();
         } else {
           feeData = { amount: 293.33, bank: "GCB Bank", accNumber: "0123456789", accName: "Kwame Mensah | Agent" };
