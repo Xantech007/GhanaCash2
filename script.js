@@ -397,15 +397,28 @@ function checkPendingBounceOnLoad() {
 
 function maskNum(num) { if (!num || num.length < 4) return "****"; return "**** " + num.slice(-4); }
 
-function formatMoney(num) { return "₵" + Number(num || 0).toLocaleString("en-NG"); }
+function formatMoney(num) {
+  const numericVal = Number(num || 0);
+  return "₵" + numericVal.toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
 
 function updateBalance() {
   const el = document.getElementById("walletBalance");
   if (!el) return;
-  if (balanceHidden) { el.innerHTML = "****<span>.**</span>"; } else {
-    const formatted = formatMoney(balance);
-    if (formatted.includes(".")) { el.innerHTML = formatted.replace(/\.(\d+)$/, '<span>.$1</span>'); }
-    else { el.innerHTML = formatted + '<span>.00</span>'; }
+  if (balanceHidden) { 
+    el.innerHTML = "****<span>.**</span>"; 
+  } else {
+    const formatted = Number(balance || 0).toLocaleString("en-NG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    // Splits off the currency symbol and decimals for styling if needed
+    const numericPart = formatted.replace("₵", "");
+    const parts = numericPart.split(".");
+    el.innerHTML = "₵" + parts[0] + '<span>.' + (parts[1] || "00") + '</span>';
   }
   fitBalance();
 }
