@@ -291,9 +291,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const doc = await db.collection('users').doc(identity).get();
         if (doc.exists) userDoc = doc.data();
       } else if (isGmail) {
-        // Query by profileEmail field
+        // Query by email field
         const querySnap = await db.collection('users')
-          .where('profileEmail', '==', identity.toLowerCase())
+          .where('email', '==', identity.toLowerCase())
           .limit(1)
           .get();
 
@@ -327,7 +327,7 @@ function checkLocalFallback(identity, password) {
     try {
       const localUser = JSON.parse(storedUserRaw);
       const matchesPhone = localUser.phone && localUser.phone === identity;
-      const matchesEmail = localUser.profileEmail && localUser.profileEmail.toLowerCase() === identity.toLowerCase();
+      const matchesEmail = localUser.email && localUser.email.toLowerCase() === identity.toLowerCase();
 
       if (matchesPhone || matchesEmail) {
         if (localUser.password === password) {
